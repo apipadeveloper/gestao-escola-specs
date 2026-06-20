@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão d'Escola - Especificador Interativo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #A87BC7;
+            --primary-dark: #8B5A9E;
+            --accent: #02B3D7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f9fafb;
+            --surface: #ffffff;
+            --border: #e5e7eb;
+            --text: #1f2937;
+            --text-muted: #6b7280;
+            --gradient-start: #A87BC7;
+            --gradient-end: #02B3D7;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            margin-bottom: 30px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+        .sidebar-logo {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+        .sidebar-version {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-align: center;
+            font-weight: 500;
+        }
+        .logo-dropzone {
+            width: 100%;
+            height: 70px;
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .logo-dropzone:hover {
+            background: #e8e8e8;
+            border-color: var(--primary);
+        }
+        .logo-dropzone.dragover {
+            background: #ddd;
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(168, 123, 199, 0.3);
+        }
+        .logo-dropzone-text {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            z-index: 2;
+        }
+        .logo-dropzone img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 4px;
+            border: none;
+            background: transparent;
+        }
+        .logo-dropzone.logo-loaded {
+            border: none;
+            background: transparent;
+        }
+        .logo-dropzone.logo-loaded:hover {
+            background: transparent;
+            border: none;
+        }
+        .logo-input {
+            display: none;
+        }
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+        .sidebar-section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        .nav-item {
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            color: var(--text);
+        }
+        .nav-item:hover { background: var(--bg); border-left-color: var(--primary); }
+        .nav-item.active { background: #f3e8ff; border-left-color: var(--primary); color: var(--primary); font-weight: 600; }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .top-bar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+            color: white;
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(90deg, var(--primary-dark), #018AA0);
+            box-shadow: 0 2px 8px rgba(168, 123, 199, 0.3);
+        }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #f3f4f6; }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        .page-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+        .page-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 25px; }
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #1e40af;
+        }
+        .spec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .spec-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px;
+            transition: all 0.2s;
+        }
+        .spec-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1); }
+        .spec-card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+        .spec-card-content {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            padding: 10px;
+            border-radius: 6px;
+            min-height: 90px;
+            border: 1px solid var(--border);
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            margin-bottom: 12px;
+        }
+        .spec-card-content.empty { color: var(--text-muted); font-style: italic; }
+        .spec-card-actions { display: flex; gap: 8px; }
+        .layout-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+        .layout-preview {
+            background: var(--bg);
+            border: 1px dashed var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .btn-layout {
+            padding: 6px 11px;
+            font-size: 11px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            background: #f0f0f0;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+        .btn-layout:hover {
+            background: #e0e0e0;
+        }
+        .file-input {
+            display: none;
+        }
+        .btn-small {
+            padding: 6px 11px;
+            font-size: 11px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.2s;
+        }
+        .btn-edit { background: var(--primary); color: white; }
+        .btn-edit:hover { background: var(--primary-dark); }
+        .btn-comments { background: var(--accent); color: white; }
+        .btn-comments:hover { background: #0284c7; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 28px;
+            width: 90%;
+            max-width: 680px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+            animation: slideUp 0.3s;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-header {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        .form-group { margin-bottom: 18px; }
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--text);
+        }
+        .form-textarea { min-height: 140px; resize: vertical; }
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 22px;
+            justify-content: flex-end;
+        }
+        .comment { background: var(--bg); padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 12px; }
+        .comment-author { font-weight: 600; color: var(--primary); font-size: 11px; margin-bottom: 3px; }
+        .comment-date { font-size: 10px; color: var(--text-muted); }
+        .comment-text { margin: 6px 0; line-height: 1.5; }
+        .task-section {
+            margin-top: 40px;
+            border-top: 2px solid var(--border);
+            padding-top: 30px;
+        }
+        .task-section h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .task-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .task-info {
+            flex: 1;
+        }
+        .task-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .task-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .task-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #b45309;
+        }
+        .status-in-progress {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-done {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .copy-feedback {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            z-index: 2000;
+            animation: slideUp 0.3s;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-dropzone" id="logoDropzone" onclick="document.getElementById('logoInput').click()">
+                    <span class="logo-dropzone-text" id="logoText">
+                        📁 Clique ou arraste<br>a logo aqui
+                    </span>
+                    <input type="file" id="logoInput" class="logo-input" accept=".png,.jpg,.jpeg,.svg,.gif" onchange="handleLogoUpload(event)">
+                </div>
+                <div class="sidebar-version">v3.0 Especificador<br>Interativo</div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">📋 Principal</div>
+                <div id="menu-principal"></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">⚙️ Administração</div>
+                <div id="menu-admin"></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">🔧 Configuração</div>
+                <div id="menu-config"></div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">📊 Análise</div>
+                <div id="menu-analise"></div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <div style="font-size: 13px; color: var(--text-muted);">
+                    <strong id="currentPage">Painel Principal</strong>
+                </div>
+                <div class="top-actions">
+                    <button class="btn btn-secondary" onclick="changeUserName()" title="Seu nome">👤 ${appData.currentUser}</button>
+                    <button class="btn btn-secondary" onclick="openGuide()" title="Guia de uso">❓ Guia</button>
+                    <button class="btn btn-primary" onclick="exportData()" title="Exportar especificações">📥 Exportar</button>
+                </div>
+            </div>
+
+            <div class="content-area" id="contentArea"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalTitle">Editar Especificação</span>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSpec()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE COMENTÁRIOS -->
+    <div class="modal" id="commentsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="commentsTitle">Comentários</span>
+                <button class="modal-close" onclick="closeCommentsModal()">×</button>
+            </div>
+            <div id="commentsBody" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== DADOS COMPLETOS COM BLUEPRINT =====
+        let appData = {
+            version: 3,
+            timestamp: new Date().toISOString(),
+            currentUser: localStorage.getItem('gestao-escola-user') || 'Você',
+            logo: null,
+            logoFileName: null,
+            menus: {
+                principal: [
+                    { id: 'dashboard', icon: '📊', label: 'Painel Principal' },
+                    { id: 'verbas', icon: '💰', label: 'Verbas' },
+                    { id: 'planejamento', icon: '📅', label: 'Planejamento' },
+                    { id: 'lancamentos-manuais', icon: '📝', label: 'Lançamentos Manuais' },
+                    { id: 'lancamentos-assistidos', icon: '🤖', label: 'Lançamentos Assistidos' },
+                    { id: 'pendencias', icon: '⚠️', label: 'Gestor de Pendências' },
+                    { id: 'tarefas', icon: '✅', label: 'Tarefas' },
+                    { id: 'notas', icon: '📓', label: 'Bloco de Notas' }
+                ],
+                admin: [
+                    { id: 'conformidade', icon: '✔️', label: 'Central de Conformidade Fiscal' },
+                    { id: 'prestacoes', icon: '📄', label: 'Prestações de Contas' },
+                    { id: 'relatorios', icon: '📊', label: 'Relatórios' },
+                    { id: 'documentos', icon: '📋', label: 'Documentos' },
+                    { id: 'fornecedores', icon: '🏢', label: 'Fornecedores' },
+                    { id: 'suporte', icon: '💬', label: 'Comunicação e Suporte' }
+                ],
+                config: [
+                    { id: 'usuarios', icon: '👥', label: 'Gerenciar Usuários' },
+                    { id: 'escolas', icon: '🏫', label: 'Gerenciar Escolas' },
+                    { id: 'config-verbas', icon: '💰', label: 'Verbas' },
+                    { id: 'contas-bancarias', icon: '🏦', label: 'Contas e Posições Bancárias' },
+                    { id: 'fontes-receita', icon: '💵', label: 'Fontes de Receita' },
+                    { id: 'conformidade-docs', icon: '✔️', label: 'Documentos de Conformidade' },
+                    { id: 'admin-docs', icon: '📋', label: 'Documentos Administrativos' },
+                    { id: 'grupos-despesa', icon: '📊', label: 'Grupos de Despesa' },
+                    { id: 'modelos-docs', icon: '🎨', label: 'Modelos de Documentos' }
+                ],
+                analise: [
+                    { id: 'rastreabilidade', icon: '🔍', label: 'Matriz de Rastreabilidade' },
+                    { id: 'fluxos', icon: '🔄', label: 'Diagramas de Fluxo' }
+                ]
+            },
+            specifications: {
+                dashboard: {
+                    title: 'Painel Principal',
+                    description: 'Visão geral consolidada da instituição com informações críticas',
+                    specs: {
+                        inputs: 'Seleção de Verba/Exercício (opcional, padrão = ano atual). Filtros opcionais para período.',
+                        processos: 'Agregação de dados de múltiplas tabelas (Saldos, Tarefas, Pendências, Chamados). Cálculo de saldos em tempo real (Financeiro, Contábil, Projetado). Formatação de datas e moedas.',
+                        outputs: 'Dashboard com 4 blocos principais: Saldos (cards por verba), Tarefas (próximos 30 dias), Pendências (ativas), Chamados (abertos). Cada bloco com link para ação contextual.',
+                        layout: { description: '', file: null }
+                    },
+                    comments: []
+                },
+                verbas: {
+                    title: 'Verbas',
+                    description: 'Gestão consolidada de todas as verbas e seus exercícios financeiros',
+                    specs: {
+                        inputs: 'Filtros: Busca por nome, Verba (dropdown), Exercício (dropdown), Tipo (Financeiro/Contábil/Projetado), Categoria (Capital/Custeio/Livre).',
+                        processos: 'Query filtrada na tabela de Verbas. Cálculo de saldo conforme tipo selecionado. Status de conformidade = (Docs Anexados / Docs Obrigatórios) × 100%.',
+                        outputs: 'Tabela com: Nome, Exercício, Capital, Custeio, Livre, Total, Status (%), Ações [Ver Detalhes].'
+                    },
+                    comments: []
+                },
+                planejamento: {
+                    title: 'Planejamento',
+                    description: 'Mini-assistente guiado para previsão de receitas e programação de despesas',
+                    specs: {
+                        inputs: 'Mini-assistente com: Verba + Exercício | Tipo (Receita/Despesa) | Detalhes específicos conforme tipo.',
+                        processos: 'Validação de saldos disponíveis. Se despesa > saldo, alerta. Se Pesquisa de Preço obrigatória, exibe etapa. Cálculo automático de totais.',
+                        outputs: 'Registro de Previsão de Receita ou Programação de Despesa no banco de dados. Geração de Pendências se documentação obrigatória.'
+                    },
+                    comments: []
+                },
+                'lancamentos-manuais': {
+                    title: 'Lançamentos Manuais',
+                    description: 'Portal para registro manual de transações financeiras reais',
+                    specs: {
+                        inputs: 'Escolha: [Lançar item já planejado] ou [Lançar item não planejado]. Upload de Nota Fiscal ou documento.',
+                        processos: 'Validação manual de dados. Comparação com valor planejado. Detalhamento de impostos retidos. Validação de documentos obrigatórios.',
+                        outputs: 'Lançamento de Despesa registrado com status "Realizado". Ajuste automático de saldos. Pendências geradas para documentos faltantes.'
+                    },
+                    comments: []
+                },
+                'lancamentos-assistidos': {
+                    title: 'Lançamentos Assistidos',
+                    description: 'Portal com assistente inteligente para lançamentos de transações',
+                    specs: {
+                        inputs: 'Upload de Nota Fiscal ou documento. Seleção de tipo (Receita/Despesa).',
+                        processos: 'Google Document AI: extração automática de dados (Fornecedor, CNPJ, Data, Valor Total). IA sugere classificação e detalhes. Comparação com planejamento. OCR para documentos escaneados.',
+                        outputs: 'Lançamento pré-preenchido para confirmação do usuário. Ajuste automático de saldos. Pendências geradas para documentos faltantes.'
+                    },
+                    comments: []
+                },
+                pendencias: {
+                    title: 'Gestor de Pendências',
+                    description: 'Central única para resolver todas as pendências operacionais',
+                    specs: {
+                        inputs: 'Filtros: Verba, Exercício, Período, Busca livre. Ação: Registrar pendência externa manualmente.',
+                        processos: '5 Abas: Documentos Pendentes | Ajustes de Planejamento (saldo excedente/insuficiente) | Conciliação Bancária | Correções em Lançamentos | Acompanhamento de Transações.',
+                        outputs: 'Listas com pendências agrupadas por tipo. Cada item com ação recomendada que redireciona para tela de resolução.'
+                    },
+                    comments: []
+                },
+                tarefas: {
+                    title: 'Tarefas',
+                    description: 'Centro de organização de atividades com visualização flexível',
+                    specs: {
+                        inputs: 'Mini-assistente: Título, Descrição, Data Programada, Data Limite, Prioridade, Natureza, Vinculação (opcional).',
+                        processos: 'Persistência em tabela Tarefa. Cron job para Notificações Push N dias antes do vencimento. Modos: Lista, Kanban, Calendário.',
+                        outputs: 'Tarefas listadas em 3 formatos. Status (Pendente/Em Progresso/Concluída). Integração com Painel Principal.'
+                    },
+                    comments: []
+                },
+                notas: {
+                    title: 'Bloco de Notas',
+                    description: 'Caderno digital com anotações estruturadas',
+                    specs: {
+                        inputs: 'Mini-assistente: Tipo (Demanda/Reunião/Livre), Título, Descrição (Rich Text com checklists), Anexos, Links.',
+                        processos: 'Busca Full-Text indexada. Filtro por Tipo. Armazenamento de Rich Text em HTML. Links: meta-tag scraping.',
+                        outputs: 'Cards com Tipo (tag colorida), Título, Prévia, Indicadores de anexos/links, Data de Criação.'
+                    },
+                    comments: []
+                },
+                conformidade: {
+                    title: 'Central de Conformidade Fiscal',
+                    description: 'Gerenciamento de obrigações fiscais, notas fiscais e declarações',
+                    specs: {
+                        inputs: '5 Abas: Painel Fiscal (calendário) | Central de NF | Apuração de Impostos | Declarações | Certidões.',
+                        processos: 'Integração gov.br: leitura automática de NFe/NFSe. Google Document AI em NFs. Cálculo de impostos retidos. Geração de arquivo ECF conforme FNDE.',
+                        outputs: 'Calendário com obrigações coloridas. Lista de NF com botão [Criar Lançamento]. Relatório de apuração em PDF. Alertas de certidões vencendo.'
+                    },
+                    comments: []
+                },
+                prestacoes: {
+                    title: 'Prestações de Contas',
+                    description: 'Orquestração do ciclo de vida completo da PC',
+                    specs: {
+                        inputs: 'Seleção de Verba/Exercício. Fluxo de 6 status: Em Elaboração → Enviada → Devolvida → Reenviada → Finalizada.',
+                        processos: 'Geração de PDF via template. Integração com assinador gov.br. Monitorização automática de assinaturas. Versioning de documentos.',
+                        outputs: 'Página de Detalhes com linha do tempo. PDFs assinados. Parecer do Governo. Histórico de versões. Fluxo seguro com validações.'
+                    },
+                    comments: []
+                },
+                relatorios: {
+                    title: 'Relatórios',
+                    description: 'Ferramenta flexível de extração e visualização de dados',
+                    specs: {
+                        inputs: '3 Abas: Gerador (tipo + filtros dinâmicos) | Salvos (relatórios customizados) | Agendados (frequência + destinatários).',
+                        processos: 'Gerador: seleção tipo → filtros dinâmicos → pré-visualização tempo real. Exportação: PDF ou Excel/CSV. Agendamento: cron job gera + envia e-mail.',
+                        outputs: 'Relatório visual com gráficos, tabelas e sumários. Múltiplos formatos. Histórico de execuções com data/hora.'
+                    },
+                    comments: []
+                },
+                fornecedores: {
+                    title: 'Fornecedores',
+                    description: 'Agenda centralizada e mini-CRM de parceiros comerciais',
+                    specs: {
+                        inputs: 'Busca "live" por nome/CNPJ. Formulário: CNPJ → busca BrasilAPI (autopreenchimento) → endereço → contatos → classificação → observações.',
+                        processos: 'CNPJ: consulta assíncrona BrasilAPI. CEP: ViaCEP. Atualização automática de "Última Compra". Bloqueio de exclusão se houver lançamentos.',
+                        outputs: 'Cards listando: Nome Fantasia, CNPJ, Grupos, Endereço, Contatos, Última Compra, Status, Ranking.'
+                    },
+                    comments: []
+                },
+                documentos: {
+                    title: 'Documentos',
+                    description: 'Repositório centralizado de documentos administrativos e de conformidade',
+                    specs: {
+                        inputs: 'Busca por nome/categoria. Filtros: Tipo, Validade, Verba. Upload de documentos.',
+                        processos: 'Organização hierárquica por categoria. Conversão para PDF. Alertas de vencimento via Cron Job. Integração com Conformidade e Administrativos.',
+                        outputs: 'Lista de documentos com status, validade, anexos. Ações: Visualizar, Atualizar, Excluir. Avisos de documentos vencidos ou próximos de vencer.'
+                    },
+                    comments: []
+                },
+                suporte: {
+                    title: 'Comunicação e Suporte',
+                    description: 'Central de comunicação e suporte com histórico auditável',
+                    specs: {
+                        inputs: 'Aba Chamados: filtros (Status, Período, Busca). Aba Abrir: Título, Interlocutor, Finalidade, Prazo Retorno, Descrição, Anexos. Base de conhecimento (FAQs).',
+                        processos: 'ID único ao chamado. Notificação Push + E-mail. Cada mensagem = MensagemChamado. Histórico completo. Log auditoria. Base de conhecimento com vídeos e tira-dúvidas automatizado.',
+                        outputs: 'Lista de Chamados com Status. Thread cronológica. Anexos. FAQ integrada. Sugestões automáticas de respostas baseadas em histórico.'
+                    },
+                    comments: []
+                },
+                usuarios: {
+                    title: 'Gerenciar Usuários',
+                    description: 'Gerenciamento completo de usuários, permissões e acessos',
+                    specs: {
+                        inputs: 'Mini-assistente: Perfil → Dados Pessoais (Função, Nome, CPF, Celular, Email) → Nível Permissão (5 níveis) → Revisão.',
+                        processos: 'RBAC no backend. Criação: status "Pendente", token com TTL, e-mail com link. Alterações: log auditoria. VinculoInstitucional permite múltiplas escolas.',
+                        outputs: 'Lista de usuários com: Função, Email, Nível, Data Criação, Status. Ações: Gerir, Excluir. Filtro por instituição.'
+                    },
+                    comments: []
+                },
+                escolas: {
+                    title: 'Gerenciar Escolas',
+                    description: 'Gestão de escolas, unidades executoras e dados cadastrais',
+                    specs: {
+                        inputs: 'Formulário: Nome da Escola, INEP, Dependência Administrativa, Endereço, UEx (CNPJ), Diretoria, Gestão.',
+                        processos: 'Validação de INEP e CNPJ. Auto-preenchimento de endereço via CEP. Gerenciamento de múltiplas gestões por escola. Histórico de alterações.',
+                        outputs: 'Lista de escolas com dados cadastrais completos. Ações: Editar, Visualizar, Excluir. Indicador de completude cadastral.'
+                    },
+                    comments: []
+                },
+                'config-verbas': {
+                    title: 'Verbas',
+                    description: 'Configuração de verbas, exercícios e suas regras de negócio',
+                    specs: {
+                        inputs: 'Mini-assistente: Nome da Verba → Primeiro Exercício → Documentos Obrigatórios → Grupos Despesa → Contas Bancárias → Fontes Receita.',
+                        processos: 'Criação de estrutura Verba → Exercício. Versionamento de regras por exercício. Validação de integridade. Cálculo de índices de conformidade.',
+                        outputs: 'Lista de Verbas com exercícios, regras configuradas, status. Ações: Editar Verba, Ver Exercícios, Adicionar Exercício, Definir Regras.'
+                    },
+                    comments: []
+                },
+                'contas-bancarias': {
+                    title: 'Contas e Posições Bancárias',
+                    description: 'Gerenciamento de contas financeiras e posições de caixa',
+                    specs: {
+                        inputs: 'Mini-assistente: Tipo (Conta/Espécie-Caixa) → Banco (COMPE auto) → Agência+DV → Conta+DV. Posições: integração bancária.',
+                        processos: 'Validação COMPE e DV. Busca local de tabela de bancos. API de integração com banco para saldos automáticos. Bloqueio se em uso.',
+                        outputs: 'Lista: Banco, Tipo, Agência, Conta, Saldo, Tipo Conta. Posições atualizadas. Ações: Editar, Excluir, Sincronizar saldo.'
+                    },
+                    comments: []
+                },
+                'fontes-receita': {
+                    title: 'Fontes de Receita',
+                    description: 'Gestão das origens de recursos financeiros',
+                    specs: {
+                        inputs: 'Mini-assistente: Nome → Esfera (checkboxes: Municipal/Estadual/Federal/Distrital/Privada/Terceiro Setor) → Descrição.',
+                        processos: 'Validação de unicidade. Múltiplas esferas em array JSON. Bloqueio se vinculada a Verba. Histórico de alterações.',
+                        outputs: 'Lista com: Nome, Esfera(s), Descrição. Ações: Editar, Excluir (bloqueado se em uso). Indicador de quantas verbas usam.'
+                    },
+                    comments: []
+                },
+                'conformidade-docs': {
+                    title: 'Documentos de Conformidade',
+                    description: 'Definição e gestão dos documentos exigidos por verba',
+                    specs: {
+                        inputs: 'Mini-assistente: Grupo → Subgrupo → Tipo (PDF Upload / Texto Livre / Lista Seleção / Fluxo Complexo) → Observações.',
+                        processos: 'Criação de tipos documentais customizáveis. Versionamento. Proteção de itens padrão do sistema. Hierarquia flexível.',
+                        outputs: 'Tabela: Grupo, Subgrupo, Tipo, Comportamento, Observações. Ações: Editar, Excluir (bloqueado se em uso). Pré-visualização do comportamento.'
+                    },
+                    comments: []
+                },
+                'admin-docs': {
+                    title: 'Documentos Administrativos',
+                    description: 'Gerenciamento de documentos gerais da instituição',
+                    specs: {
+                        inputs: 'Mini-assistente: Categoria → Subcategoria → Seção (opcional) → Observações. Checkbox "Exigir".',
+                        processos: 'Criação de categorias e subcategorias customizáveis. Proteção de itens padrão. Controle de quais são exigidos. Alertas de vencimento.',
+                        outputs: 'Tabela: Categoria, Subcategoria, Seção, Observações, Status Exigido. Ações: Editar, Excluir, Marcar/Desmarcar como Exigido.'
+                    },
+                    comments: []
+                },
+                'grupos-despesa': {
+                    title: 'Grupos de Despesa',
+                    description: 'Organização hierárquica de categorias de despesas',
+                    specs: {
+                        inputs: 'Mini-assistente: Usar Área Existente ou Criar Nova → Nome Subárea → Observações. Toggle Master para habilitar/desabilitar.',
+                        processos: 'Hierarquia Área → Subárea. Validação de unicidade. Bloqueio se subárea usada em lançamento. Controle de visibilidade.',
+                        outputs: 'Tabela hierárquica mostrando Áreas e Subáreas. Ações: Editar, Excluir (bloqueado se em uso). Indicador de quantos lançamentos usam.'
+                    },
+                    comments: []
+                },
+                'modelos-docs': {
+                    title: 'Modelos de Documentos',
+                    description: 'Estúdio de criação de templates para relatórios e documentos',
+                    specs: {
+                        inputs: 'Seleção de Tipo de Relatório. Modelo Base (Personalização Guiada) ou Blank Canvas (Editor por Módulos). Campos Dinâmicos.',
+                        processos: 'Drag-and-drop de blocos (Texto, Imagem, Tabelas, Gráficos, Assinatura). Campos dinâmicos {verba.nome}, {diretoria.presidente}. Pré-visualização tempo real. Versionamento.',
+                        outputs: 'Template salvo em JSON. Geração de PDFs conforme template. Exportável. Serviço premium para personalização externa. Gallery de templates.'
+                    },
+                    comments: []
+                },
+                rastreabilidade: {
+                    title: 'Matriz de Rastreabilidade',
+                    description: 'Acompanhamento de requisitos, implementação e progresso',
+                    specs: {
+                        inputs: 'Filtros: Status, Responsável, Sprint/Release, Prioridade.',
+                        processos: 'Cruzamento: Especificações × Tarefas TI × Status. Cálculo % completude por módulo. Integração visual com sprints.',
+                        outputs: 'Tabela rastreável: Requisito | Menu/Tela | APIs | Status | Responsável | Sprint | Data Prevista. Com cores e filtros.'
+                    },
+                    comments: []
+                },
+                fluxos: {
+                    title: 'Diagramas de Fluxo',
+                    description: 'Visualização de como dados fluem entre telas, sistemas e APIs',
+                    specs: {
+                        inputs: 'Seleção de fluxo principal (ex: Lançamento de Despesa, Prestação de Contas, Conciliação).',
+                        processos: 'Mapeamento: Tela → Validações → API Interna → API Externa (gov.br, BrasilAPI) → Banco Dados → Retorno → Próxima Tela.',
+                        outputs: 'Diagrama visual (flowchart) mostrando caminho completo. Exportável como imagem para documentação técnica.'
+                    },
+                    comments: []
+                }
+            }
+        };
+
+        let currentPage = 'dashboard';
+        let currentEdit = null;
+        const defaultTasks = [
+            { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs' },
+            { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas' },
+            { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração' }
+        ];
+
+        function renderMenus() {
+            Object.entries(appData.menus).forEach(([section, items]) => {
+                const html = items.map(item => `
+                    <div class="nav-item ${currentPage === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')">
+                        ${item.icon} ${item.label}
+                    </div>
+                `).join('');
+                document.getElementById(`menu-${section}`).innerHTML = html;
+            });
+        }
+
+        function navigateTo(page) {
+            currentPage = page;
+            if (!appData.specifications[page]) {
+                document.getElementById('contentArea').innerHTML = '<p style="padding: 30px; color: #999; text-align: center;">⚠️ Página não configurada ainda.</p>';
+                return;
+            }
+
+            const data = appData.specifications[page];
+            document.getElementById('currentPage').textContent = data.title;
+            renderMenus();
+
+            let html = `
+                <h1 class="page-title">${data.title}</h1>
+                <p class="page-subtitle">${data.description}</p>
+                <div class="info-box">
+                    💡 <strong>Dica:</strong> Clique em ✏️ para editar, 💬 para comentar. Adicione observações que sua equipe de TI precise saber.
+                </div>
+                <div class="spec-grid">
+            `;
+
+            Object.entries(data.specs).forEach(([key, specValue]) => {
+                // Handle both old format (string) and new format (object with layout)
+                const isLayoutField = key === 'layout';
+                const value = typeof specValue === 'string' ? specValue : (specValue && specValue.description ? specValue.description : '');
+                const layoutFile = specValue && specValue.file ? specValue.file : null;
+                const commentCount = (data.comments || []).filter(c => c.field === key).length;
+
+                html += `
+                    <div class="spec-card">
+                        <div class="spec-card-title">📌 ${key.toUpperCase()}</div>
+                        <div class="spec-card-content ${!value ? 'empty' : ''}">${value || 'Clique em Editar para preencher'}</div>
+                        ${isLayoutField ? `
+                            <div class="layout-section">
+                                <div style="font-size: 11px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted);">📎 ARQUIVO</div>
+                                <div class="layout-preview" id="layout-preview-${page}">
+                                    ${layoutFile ? `✅ Arquivo carregado` : '📁 Nenhum arquivo'}
+                                </div>
+                                <button class="btn-layout" onclick="triggerFileUpload('${page}')">📤 Carregar Arquivo</button>
+                                <input type="file" id="file-input-${page}" class="file-input" onchange="handleFileUpload('${page}', event)" accept=".pdf,.png,.jpg,.jpeg,.figma,.xd,.sketch,.psd">
+                                ${layoutFile ? `<button class="btn-layout" style="margin-left: 4px;" onclick="clearFile('${page}')">🗑️ Remover</button>` : ''}
+                            </div>
+                        ` : ''}
+                        <div class="spec-card-actions">
+                            <button class="btn-small btn-edit" onclick="editSpec('${page}', '${key}')">✏️ Editar</button>
+                            <button class="btn-small btn-comments" onclick="showComments('${page}', '${key}')">💬 ${commentCount}</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            // ===== TAREFAS DE IMPLEMENTAÇÃO =====
+            html += `
+                <div class="task-section">
+                    <h2>📋 Tarefas de Implementação</h2>
+            `;
+
+            defaultTasks.forEach((task, i) => {
+                html += `
+                    <div class="task-item">
+                        <input type="checkbox" class="task-checkbox" onchange="toggleTask(this)">
+                        <div class="task-info">
+                            <div class="task-title">${task.title}</div>
+                            <div class="task-desc">${task.desc}</div>
+                        </div>
+                        <span class="task-status status-pending">Pendente</span>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            document.getElementById('contentArea').innerHTML = html;
+        }
+
+        function editSpec(page, field) {
+            currentEdit = { page, field };
+            const specValue = appData.specifications[page].specs[field];
+            const value = typeof specValue === 'string' ? specValue : (specValue && specValue.description ? specValue.description : '');
+            const isLayoutField = field === 'layout';
+
+            document.getElementById('modalTitle').textContent = `Editar ${field.toUpperCase()}`;
+
+            let modalHTML = `
+                <div class="form-group">
+                    <label class="form-label">Descrição${isLayoutField ? ' (Descrever o layout/design)' : ''}:</label>
+                    <textarea class="form-textarea" id="specInput">${value}</textarea>
+                </div>
+            `;
+
+            if (!isLayoutField) {
+                modalHTML += `
+                    <div class="form-group">
+                        <p style="font-size: 12px; color: #666; line-height: 1.6;">
+                            <strong>📝 Dicas para boas specs:</strong><br>
+                            • Seja claro e objetivo (máx 3 linhas)<br>
+                            • <strong>INPUTS:</strong> O que o usuário manda<br>
+                            • <strong>PROCESSOS:</strong> Lógica, validações, APIs externas<br>
+                            • <strong>OUTPUTS:</strong> O que o sistema entrega<br>
+                            • Mencione gov.br, BrasilAPI, assinador digital, OCR
+                        </p>
+                    </div>
+                `;
+            } else {
+                modalHTML += `
+                    <div class="form-group">
+                        <p style="font-size: 12px; color: #666; line-height: 1.6;">
+                            <strong>🎨 Campo de Layout:</strong><br>
+                            • Descreva o layout/design da tela<br>
+                            • Ou carregue arquivo (Figma, Wireframe, Sketch, etc)<br>
+                            • O upload é feito na visualização da página
+                        </p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('modalBody').innerHTML = modalHTML;
+            document.getElementById('editModal').classList.add('active');
+            document.getElementById('specInput').focus();
+        }
+
+        function saveSpec() {
+            const value = document.getElementById('specInput').value;
+            const field = currentEdit.field;
+            const specs = appData.specifications[currentEdit.page].specs;
+
+            // Se for campo layout, salvar description
+            if (field === 'layout') {
+                if (!specs.layout) specs.layout = { description: '', file: null };
+                specs.layout.description = value;
+            } else {
+                // Para outros campos, verificar se já é objeto ou string
+                const existing = specs[field];
+                if (typeof existing === 'object' && existing !== null && 'description' in existing) {
+                    existing.description = value;
+                } else {
+                    specs[field] = value;
+                }
+            }
+
+            appData.version++;
+            appData.timestamp = new Date().toISOString();
+            closeModal();
+            navigateTo(currentPage);
+            showFeedback('✅ Salvo com sucesso!');
+        }
+
+        function showComments(page, field) {
+            const specs = appData.specifications[page];
+            if (!specs.comments) specs.comments = [];
+            const comments = specs.comments.filter(c => c.field === field);
+
+            document.getElementById('commentsTitle').textContent = `Comentários - ${field}`;
+            let html = '';
+
+            comments.forEach((c, i) => {
+                html += `
+                    <div class="comment">
+                        <div class="comment-author">${c.author || 'Você'}</div>
+                        <div class="comment-date">${new Date(c.date).toLocaleString('pt-BR')}</div>
+                        <div class="comment-text">${c.text}</div>
+                        <button style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 11px;" onclick="deleteComment('${page}', '${field}', ${i})">🗑️ Remover</button>
+                    </div>
+                `;
+            });
+
+            html += `
+                <div style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
+                    <input type="text" class="form-input" id="newComment" placeholder="Adicione um comentário ou dúvida...">
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 8px;" onclick="addComment('${page}', '${field}')">Comentar</button>
+                </div>
+            `;
+
+            document.getElementById('commentsBody').innerHTML = html;
+            document.getElementById('commentsModal').classList.add('active');
+            setTimeout(() => document.getElementById('newComment').focus(), 100);
+        }
+
+        function addComment(page, field) {
+            const text = document.getElementById('newComment').value.trim();
+            if (!text) return;
+            if (!appData.specifications[page].comments) appData.specifications[page].comments = [];
+            appData.specifications[page].comments.push({
+                field,
+                text,
+                author: appData.currentUser,
+                date: new Date().toISOString()
+            });
+            showComments(page, field);
+            showFeedback('💬 Comentário adicionado!');
+        }
+
+        function changeUserName() {
+            const newName = prompt('Qual é seu nome/departamento?', appData.currentUser);
+            if (newName && newName.trim()) {
+                appData.currentUser = newName.trim();
+                localStorage.setItem('gestao-escola-user', appData.currentUser);
+                navigateTo(currentPage);
+                showFeedback(`👤 Olá, ${appData.currentUser}!`);
+            }
+        }
+
+        function deleteComment(page, field, index) {
+            appData.specifications[page].comments.splice(index, 1);
+            showComments(page, field);
+        }
+
+        function toggleTask(checkbox) {
+            const statusSpan = checkbox.parentElement.querySelector('.task-status');
+            if (checkbox.checked) {
+                statusSpan.textContent = 'Concluído';
+                statusSpan.className = 'task-status status-done';
+            } else {
+                statusSpan.textContent = 'Pendente';
+                statusSpan.className = 'task-status status-pending';
+            }
+        }
+
+        function closeModal() { document.getElementById('editModal').classList.remove('active'); }
+        function closeCommentsModal() { document.getElementById('commentsModal').classList.remove('active'); }
+
+        function exportData() {
+            const json = JSON.stringify(appData, null, 2);
+            const link = document.createElement('a');
+            link.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(json);
+            link.download = `gestao-escola-specs-v${appData.version}.json`;
+            link.click();
+            showFeedback('📥 Exportado com sucesso!');
+        }
+
+        function showFeedback(msg) {
+            const div = document.createElement('div');
+            div.className = 'copy-feedback';
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2000);
+        }
+
+        function triggerFileUpload(page) {
+            document.getElementById(`file-input-${page}`).click();
+        }
+
+        function handleFileUpload(page, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fileData = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: e.target.result
+                };
+
+                appData.specifications[page].specs.layout = {
+                    description: appData.specifications[page].specs.layout.description,
+                    file: fileData
+                };
+
+                navigateTo(page);
+                showFeedback(`📤 Arquivo "${file.name}" carregado!`);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearFile(page) {
+            if (confirm('Tem certeza que deseja remover o arquivo?')) {
+                appData.specifications[page].specs.layout.file = null;
+                navigateTo(page);
+                showFeedback('🗑️ Arquivo removido');
+            }
+        }
+
+        function openGuide() {
+            alert(`
+🎯 COMO USAR
+
+1. NAVEGUE pelos menus para acessar diferentes seções
+2. LEIA as especificações pré-preenchidas (INPUTS, PROCESSOS, OUTPUTS)
+3. CLIQUE em ✏️ para EDITAR ou ADICIONAR mais detalhes
+4. CLIQUE em 📤 para CARREGAR ARQUIVO (Figma, Wireframe, etc)
+5. CLIQUE em 💬 para COMENTAR e esclarecer dúvidas
+6. MARQUE ✅ as tarefas conforme sua equipe implementa
+7. EXPORTE em JSON para compartilhar com sua equipe de TI
+
+💡 Dica: Use o campo LAYOUT para descrever ou anexar wireframes/mockups. Use comentários para dúvidas.
+            `);
+        }
+
+        // Função para migrar especificações antigas (adicionar campo layout)
+        function migrateOldSpecs() {
+            Object.keys(appData.specifications).forEach(pageId => {
+                const specs = appData.specifications[pageId].specs;
+                Object.keys(specs).forEach(fieldKey => {
+                    const fieldValue = specs[fieldKey];
+                    // Se for string, converter para objeto com layout
+                    if (typeof fieldValue === 'string') {
+                        specs[fieldKey] = { description: fieldValue };
+                    }
+                    // Se for objeto mas não tiver layout, adicionar
+                    if (typeof specs[fieldKey] === 'object' && !specs[fieldKey].layout && fieldKey !== 'layout') {
+                        // Continuar como está (já é objeto)
+                    }
+                });
+                // Adicionar campo layout se não existir
+                if (!specs.layout) {
+                    specs.layout = { description: '', file: null };
+                }
+            });
+        }
+
+        // Funções para upload de logo
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dropzone = document.getElementById('logoDropzone');
+                const existingImg = dropzone.querySelector('img');
+                if (existingImg) existingImg.remove();
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                dropzone.appendChild(img);
+                dropzone.classList.add('logo-loaded');
+
+                const textSpan = document.getElementById('logoText');
+                textSpan.style.display = 'none';
+
+                appData.logo = e.target.result;
+                appData.logoFileName = file.name;
+                showFeedback('✅ Logo carregada com sucesso!');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Drag and drop para logo
+        const logoDropzone = document.getElementById('logoDropzone');
+        if (logoDropzone) {
+            logoDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                logoDropzone.classList.add('dragover');
+            });
+
+            logoDropzone.addEventListener('dragleave', () => {
+                logoDropzone.classList.remove('dragover');
+            });
+
+            logoDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                logoDropzone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    document.getElementById('logoInput').files = files;
+                    handleLogoUpload({ target: { files: files } });
+                }
+            });
+        }
+
+        window.addEventListener('load', () => {
+            migrateOldSpecs();
+            renderMenus();
+            navigateTo('dashboard');
+        });
+    </script>
+</body>
+</html>
