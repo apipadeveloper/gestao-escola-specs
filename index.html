@@ -1004,6 +1004,18 @@
         let currentPage = 'dashboard';
         let currentEdit = null;
 
+        // Função para escapar HTML e evitar XSS
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
         function renderMenus() {
             Object.entries(appData.menus).forEach(([section, items]) => {
                 const html = items.map(item => `
@@ -1033,8 +1045,8 @@
             }
 
             let html = `
-                <h1 class="page-title">${data.title}</h1>
-                <p class="page-subtitle" id="pageDesc_${page}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="editPageDescription('${page}')">${data.description} ✏️</p>
+                <h1 class="page-title">${escapeHtml(data.title)}</h1>
+                <p class="page-subtitle" id="pageDesc_${page}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="editPageDescription('${page}')">${escapeHtml(data.description)} ✏️</p>
                 <div class="info-box">
                     💡 <strong>Dica:</strong> Clique na descrição acima para editar, em ✏️ para editar specs, 💬 para comentar. Adicione observações que sua equipe de TI precise saber.
                 </div>
@@ -1050,15 +1062,16 @@
                 html += `
                     <div class="spec-card">
                         <div class="spec-card-title">📌 ${key.toUpperCase()}</div>
-                        <div class="spec-card-content ${!value ? 'empty' : ''}">${value || 'Clique em Editar para preencher'}</div>
+                        <div class="spec-card-content ${!value ? 'empty' : ''}">${escapeHtml(value) || 'Clique em Editar para preencher'}</div>
                         ${isLayoutField ? `
                             <div class="layout-section">
                                 <div style="font-size: 11px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted);">📎 ARQUIVO</div>
                                 <div class="layout-preview" id="layout-preview-${page}">
-                                    ${layoutFile ? `✅ Arquivo carregado` : '📁 Nenhum arquivo'}
+                                    ${layoutFile ? `✅ ${escapeHtml(layoutFile.name)} (${(layoutFile.size / 1024).toFixed(1)}KB)` : '📁 Nenhum arquivo'}
                                 </div>
                                 <button class="btn-layout" onclick="triggerFileUpload('${page}')">📤 Carregar Arquivo</button>
                                 <input type="file" id="file-input-${page}" class="file-input" onchange="handleFileUpload('${page}', event)" accept=".pdf,.png,.jpg,.jpeg,.figma,.xd,.sketch,.psd">
+                                ${layoutFile ? `<button class="btn-layout" style="margin-left: 4px; background: #dbeafe; color: #1e40af;" onclick="downloadLayoutFile('${page}')">⬇️ Download</button>` : ''}
                                 ${layoutFile ? `<button class="btn-layout" style="margin-left: 4px;" onclick="clearFile('${page}')">🗑️ Remover</button>` : ''}
                             </div>
                         ` : ''}
@@ -1200,9 +1213,9 @@
             comments.forEach((c, i) => {
                 html += `
                     <div class="comment">
-                        <div class="comment-author">${c.author || 'Você'}</div>
+                        <div class="comment-author">${escapeHtml(c.author || 'Você')}</div>
                         <div class="comment-date">${new Date(c.date).toLocaleString('pt-BR')}</div>
-                        <div class="comment-text">${c.text}</div>
+                        <div class="comment-text">${escapeHtml(c.text)}</div>
                         <button style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 11px;" onclick="deleteComment('${page}', '${field}', ${i})">🗑️ Remover</button>
                     </div>
                 `;
@@ -1230,7 +1243,16 @@
                 author: appData.currentUser,
                 date: new Date().toISOString()
             });
+            appData.timestamp = new Date().toISOString();
             saveData();
+
+            // Atualizar o contador de comentários no DOM
+            const commentCount = appData.specifications[page].comments.filter(c => c.field === field).length;
+            const commentButton = document.querySelector(`button[onclick="showComments('${page}', '${field}')"]`);
+            if (commentButton) {
+                commentButton.textContent = `💬 ${commentCount}`;
+            }
+
             showComments(page, field);
             showFeedback('💬 Comentário adicionado!');
         }
@@ -1240,6 +1262,7 @@
             if (newName && newName.trim()) {
                 appData.currentUser = newName.trim();
                 localStorage.setItem('gestao-escola-user', appData.currentUser);
+                appData.timestamp = new Date().toISOString();
                 const userName = document.getElementById('userName');
                 if (userName) {
                     userName.textContent = appData.currentUser;
@@ -1260,6 +1283,7 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 appData.userPhoto = e.target.result;
+                appData.timestamp = new Date().toISOString();
                 updateUserAvatar();
                 saveData();
                 showFeedback('📸 Foto atualizada!');
@@ -1272,15 +1296,29 @@
             if (!avatar) return;
 
             if (appData.userPhoto) {
-                avatar.innerHTML = `<img src="${appData.userPhoto}" alt="${appData.currentUser}">`;
+                // Usar textContent para evitar XSS
+                const img = document.createElement('img');
+                img.src = appData.userPhoto;
+                img.alt = appData.currentUser;
+                avatar.innerHTML = '';
+                avatar.appendChild(img);
             } else {
-                avatar.innerHTML = appData.currentUser.charAt(0).toUpperCase();
+                avatar.textContent = appData.currentUser.charAt(0).toUpperCase();
             }
         }
 
         function deleteComment(page, field, index) {
             appData.specifications[page].comments.splice(index, 1);
+            appData.timestamp = new Date().toISOString();
             saveData();
+
+            // Atualizar o contador de comentários no DOM
+            const commentCount = appData.specifications[page].comments.filter(c => c.field === field).length;
+            const commentButton = document.querySelector(`button[onclick="showComments('${page}', '${field}')"]`);
+            if (commentButton) {
+                commentButton.textContent = `💬 ${commentCount}`;
+            }
+
             showComments(page, field);
         }
 
@@ -1295,6 +1333,7 @@
                 statusSpan.className = 'task-status status-pending';
                 appData.specifications[page].tasks[taskIndex].status = 'pending';
             }
+            appData.timestamp = new Date().toISOString();
             saveData();
         }
 
@@ -1311,6 +1350,7 @@
 
             appData.specifications[page].tasks[taskIndex].title = newTitle;
             appData.specifications[page].tasks[taskIndex].desc = newDesc;
+            appData.timestamp = new Date().toISOString();
             saveData();
             navigateTo(page);
             showFeedback('✅ Tarefa atualizada!');
@@ -1319,6 +1359,7 @@
         function deleteTask(page, taskIndex) {
             if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
                 appData.specifications[page].tasks.splice(taskIndex, 1);
+                appData.timestamp = new Date().toISOString();
                 saveData();
                 navigateTo(page);
                 showFeedback('🗑️ Tarefa excluída!');
@@ -1386,6 +1427,7 @@
             const newLabel = prompt('Novo nome do grupo:', labels[groupKey]);
             if (newLabel) {
                 labels[groupKey] = newLabel;
+                appData.timestamp = new Date().toISOString();
                 // Atualizar no DOM
                 navigateTo('editar-menus');
                 showFeedback('✅ Grupo atualizado!');
@@ -1403,6 +1445,7 @@
 
             appData.menus[groupKey][itemIndex].label = newLabel;
             appData.menus[groupKey][itemIndex].icon = newIcon;
+            appData.timestamp = new Date().toISOString();
             saveData();
             navigateTo('editar-menus');
             renderMenus();
@@ -1410,12 +1453,21 @@
         }
 
         function deleteMenuItem(groupKey, itemIndex) {
-            if (confirm(`Tem certeza que deseja excluir "${appData.menus[groupKey][itemIndex].label}"?`)) {
+            const item = appData.menus[groupKey][itemIndex];
+            if (confirm(`Tem certeza que deseja excluir "${item.label}"?\n\n⚠️ Todos os dados desta página também serão removidos!`)) {
+                // Remover de menus
                 appData.menus[groupKey].splice(itemIndex, 1);
+
+                // Remover de specifications também
+                if (appData.specifications[item.id]) {
+                    delete appData.specifications[item.id];
+                }
+
+                appData.timestamp = new Date().toISOString();
                 saveData();
                 navigateTo('editar-menus');
                 renderMenus();
-                showFeedback('🗑️ Item excluído!');
+                showFeedback('🗑️ Item e dados excluídos!');
             }
         }
 
@@ -1435,6 +1487,21 @@
                 label: label
             });
 
+            // Criar entrada vazia nas specifications também
+            appData.specifications[id] = {
+                title: label,
+                description: '',
+                specs: {
+                    inputs: '',
+                    processos: '',
+                    outputs: '',
+                    layout: { description: '', file: null }
+                },
+                comments: [],
+                tasks: []
+            };
+
+            appData.timestamp = new Date().toISOString();
             saveData();
             navigateTo('editar-menus');
             renderMenus();
@@ -1446,6 +1513,7 @@
             const newDescription = prompt('Nova descrição da página:', data.description);
             if (newDescription && newDescription.trim()) {
                 appData.specifications[page].description = newDescription.trim();
+                appData.timestamp = new Date().toISOString();
                 saveData();
                 navigateTo(page);
                 showFeedback('✅ Descrição atualizada!');
@@ -1470,16 +1538,25 @@
                     }
 
                     if (confirm('⚠️ Isso vai substituir todos os dados atuais.\n\nTem certeza que deseja importar?')) {
-                        if (importedData.logo) {
-                            appData.logo = importedData.logo;
-                        }
-
+                        // Importar TODOS os dados
                         appData.specifications = importedData.specifications;
                         appData.currentUser = importedData.currentUser;
                         appData.version = importedData.version || appData.version;
-                        appData.lastUpdated = new Date().toISOString();
+                        appData.timestamp = importedData.timestamp || new Date().toISOString();
+
+                        // Importar logo se existir
+                        if (importedData.logo) {
+                            appData.logo = importedData.logo;
+                            appData.logoFileName = importedData.logoFileName || null;
+                        }
+
+                        // Importar foto do usuário se existir
+                        if (importedData.userPhoto) {
+                            appData.userPhoto = importedData.userPhoto;
+                        }
 
                         saveData();
+                        updateVersionDisplay();
                         showFeedback('✅ Dados importados com sucesso!');
                         navigateTo(Object.keys(appData.specifications)[0]);
                     }
@@ -1517,6 +1594,12 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            // Verificar tamanho do arquivo (máximo 5MB para evitar problemas de localStorage)
+            if (file.size > 5 * 1024 * 1024) {
+                showFeedback('⚠️ Arquivo muito grande (máx 5MB)!');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 const fileData = {
@@ -1531,16 +1614,32 @@
                     file: fileData
                 };
 
+                appData.timestamp = new Date().toISOString();
                 navigateTo(page);
-                showFeedback(`📤 Arquivo "${file.name}" carregado!`);
+                showFeedback(`📤 Arquivo "${escapeHtml(file.name)}" carregado!`);
                 saveData();
+
+                // Resetar input para permitir re-upload do mesmo arquivo
+                event.target.value = '';
             };
             reader.readAsDataURL(file);
+        }
+
+        function downloadLayoutFile(page) {
+            const fileData = appData.specifications[page].specs.layout.file;
+            if (!fileData) return;
+
+            const link = document.createElement('a');
+            link.href = fileData.data;
+            link.download = fileData.name;
+            link.click();
+            showFeedback('⬇️ Download iniciado!');
         }
 
         function clearFile(page) {
             if (confirm('Tem certeza que deseja remover o arquivo?')) {
                 appData.specifications[page].specs.layout.file = null;
+                appData.timestamp = new Date().toISOString();
                 navigateTo(page);
                 showFeedback('🗑️ Arquivo removido');
                 saveData();
@@ -1599,6 +1698,7 @@
 
                 appData.logo = e.target.result;
                 appData.logoFileName = file.name;
+                appData.timestamp = new Date().toISOString();
                 showFeedback('✅ Logo carregada com sucesso!');
                 saveData();
             };
