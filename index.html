@@ -1098,7 +1098,10 @@
 
             html += `
                 <div class="task-section">
-                    <h2>📋 Tarefas de Implementação</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">📋 Tarefas de Implementação</h2>
+                        <button class="btn btn-primary" onclick="addTask('${page}')" style="padding: 6px 12px; font-size: 12px;">➕ Nova Tarefa</button>
+                    </div>
             `;
 
             // Separar tarefas concluídas das pendentes
@@ -1339,6 +1342,25 @@
 
         function closeModal() { document.getElementById('editModal').classList.remove('active'); }
         function closeCommentsModal() { document.getElementById('commentsModal').classList.remove('active'); }
+
+        function addTask(page) {
+            const title = prompt('Título da nova tarefa:');
+            if (title === null) return;
+
+            const desc = prompt('Descrição da tarefa:');
+            if (desc === null) return;
+
+            appData.specifications[page].tasks.push({
+                title: title,
+                desc: desc,
+                status: 'pending'
+            });
+
+            appData.timestamp = new Date().toISOString();
+            saveData();
+            navigateTo(page);
+            showFeedback('➕ Tarefa criada!');
+        }
 
         function editTask(page, taskIndex) {
             const task = appData.specifications[page].tasks[taskIndex];
@@ -1753,6 +1775,24 @@
             if (userName) userName.textContent = appData.currentUser;
 
             updateUserAvatar();
+            updateLogoDisplay();
+        }
+
+        function updateLogoDisplay() {
+            const dropzone = document.getElementById('logoDropzone');
+            if (!dropzone) return;
+
+            if (appData.logo) {
+                const existingImg = dropzone.querySelector('img');
+                if (!existingImg) {
+                    const img = document.createElement('img');
+                    img.src = appData.logo;
+                    dropzone.appendChild(img);
+                    dropzone.classList.add('logo-loaded');
+                    const textSpan = document.getElementById('logoText');
+                    if (textSpan) textSpan.style.display = 'none';
+                }
+            }
         }
 
         window.addEventListener('load', () => {
