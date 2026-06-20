@@ -457,8 +457,10 @@
                 <div class="top-actions">
                     <button class="btn btn-secondary" onclick="changeUserName()" title="Seu nome">👤 ${appData.currentUser}</button>
                     <button class="btn btn-secondary" onclick="openGuide()" title="Guia de uso">❓ Guia</button>
+                    <button class="btn btn-primary" onclick="importData()" title="Importar especificações">📤 Importar</button>
                     <button class="btn btn-primary" onclick="exportData()" title="Exportar especificações">📥 Exportar</button>
                 </div>
+                <input type="file" id="importFileInput" style="display: none;" accept=".json" onchange="handleImportFile(event)">
             </div>
 
             <div class="content-area" id="contentArea"></div>
@@ -1030,6 +1032,51 @@
         function closeModal() { document.getElementById('editModal').classList.remove('active'); }
         function closeCommentsModal() { document.getElementById('commentsModal').classList.remove('active'); }
 
+        function importData() {
+            document.getElementById('importFileInput').click();
+        }
+
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+
+                    // Validação básica
+                    if (!importedData.specifications || !importedData.currentUser) {
+                        throw new Error('Arquivo JSON inválido');
+                    }
+
+                    // Confirmar antes de sobrescrever
+                    if (confirm('⚠️ Isso vai substituir todos os dados atuais.\n\nTem certeza que deseja importar?')) {
+                        // Manter a logo atual se não houver nova
+                        if (importedData.logo) {
+                            appData.logo = importedData.logo;
+                        }
+
+                        // Importar dados
+                        appData.specifications = importedData.specifications;
+                        appData.currentUser = importedData.currentUser;
+                        appData.version = importedData.version || appData.version;
+                        appData.lastUpdated = new Date().toISOString();
+
+                        saveData();
+                        showFeedback('✅ Dados importados com sucesso!');
+                        navigateTo(Object.keys(appData.specifications)[0]);
+                    }
+                } catch (error) {
+                    alert('❌ Erro ao importar: ' + error.message);
+                }
+
+                // Limpar input
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
         function exportData() {
             const json = JSON.stringify(appData, null, 2);
             const link = document.createElement('a');
@@ -1170,11 +1217,35 @@
             });
         }
 
+        // Inicializar dados no localStorage
+        function saveData() {
+            localStorage.setItem('gestao-escola-app', JSON.stringify(appData));
+        }
+
+        function loadData() {
+            const stored = localStorage.getItem('gestao-escola-app');
+            if (stored) {
+                try {
+                    appData = JSON.parse(stored);
+                } catch (e) {
+                    console.log('Erro ao carregar dados, usando padrão');
+                }
+            }
+        }
+
         window.addEventListener('load', () => {
+            loadData();
             migrateOldSpecs();
             renderMenus();
             navigateTo('dashboard');
+            
+            // Salvar dados automaticamente a cada mudança
+            document.addEventListener('change', saveData);
+            document.addEventListener('input', saveData);
         });
+
+        // Salvar dados quando fechar a página
+        window.addEventListener('beforeunload', saveData);
     </script>
 </body>
 </html>
