@@ -147,6 +147,44 @@
             justify-content: space-between;
             align-items: center;
         }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: var(--bg);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .version-badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: auto;
+        }
         .top-actions {
             display: flex;
             gap: 10px;
@@ -425,7 +463,7 @@
                     </span>
                     <input type="file" id="logoInput" class="logo-input" accept=".png,.jpg,.jpeg,.svg,.gif" onchange="handleLogoUpload(event)">
                 </div>
-                <div class="sidebar-version">v3.0 Especificador<br>Interativo</div>
+                <div class="sidebar-version">v3.1 Especificador<br>Interativo</div>
             </div>
 
             <div class="sidebar-section">
@@ -455,10 +493,18 @@
                     <strong id="currentPage">Painel Principal</strong>
                 </div>
                 <div class="top-actions">
-                    <button class="btn btn-secondary" onclick="changeUserName()" title="Seu nome">👤 ${appData.currentUser}</button>
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar" onclick="changeUserPhoto()" title="Clique para mudar foto">👤</div>
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span id="userName" style="font-weight: 600; cursor: pointer;" onclick="changeUserName()">Você</span>
+                            <span style="font-size: 11px; color: var(--text-muted);">v<span id="versionDisplay">3.3</span></span>
+                        </div>
+                        <input type="file" id="photoInput" style="display: none;" accept="image/*" onchange="handlePhotoUpload(event)">
+                    </div>
                     <button class="btn btn-secondary" onclick="openGuide()" title="Guia de uso">❓ Guia</button>
                     <button class="btn btn-primary" onclick="importData()" title="Importar especificações">📤 Importar</button>
                     <button class="btn btn-primary" onclick="exportData()" title="Exportar especificações">📥 Exportar</button>
+                    <div class="version-badge">Backup: v<span id="backupVersion">3.3</span></div>
                 </div>
                 <input type="file" id="importFileInput" style="display: none;" accept=".json" onchange="handleImportFile(event)">
             </div>
@@ -496,9 +542,10 @@
     <script>
         // ===== DADOS COMPLETOS COM BLUEPRINT =====
         let appData = {
-            version: 3,
+            version: 3.3,
             timestamp: new Date().toISOString(),
             currentUser: localStorage.getItem('gestao-escola-user') || 'Você',
+            userPhoto: null,
             logo: null,
             logoFileName: null,
             menus: {
@@ -533,7 +580,8 @@
                 ],
                 analise: [
                     { id: 'rastreabilidade', icon: '🔍', label: 'Matriz de Rastreabilidade' },
-                    { id: 'fluxos', icon: '🔄', label: 'Diagramas de Fluxo' }
+                    { id: 'fluxos', icon: '🔄', label: 'Diagramas de Fluxo' },
+                    { id: 'editar-menus', icon: '⚙️', label: 'Editar Menus' }
                 ]
             },
             specifications: {
@@ -546,7 +594,12 @@
                         outputs: 'Dashboard com 4 blocos principais: Saldos (cards por verba), Tarefas (próximos 30 dias), Pendências (ativas), Chamados (abertos). Cada bloco com link para ação contextual.',
                         layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 verbas: {
                     title: 'Verbas',
@@ -554,9 +607,15 @@
                     specs: {
                         inputs: 'Filtros: Busca por nome, Verba (dropdown), Exercício (dropdown), Tipo (Financeiro/Contábil/Projetado), Categoria (Capital/Custeio/Livre).',
                         processos: 'Query filtrada na tabela de Verbas. Cálculo de saldo conforme tipo selecionado. Status de conformidade = (Docs Anexados / Docs Obrigatórios) × 100%.',
-                        outputs: 'Tabela com: Nome, Exercício, Capital, Custeio, Livre, Total, Status (%), Ações [Ver Detalhes].'
+                        outputs: 'Tabela com: Nome, Exercício, Capital, Custeio, Livre, Total, Status (%), Ações [Ver Detalhes].',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 planejamento: {
                     title: 'Planejamento',
@@ -564,9 +623,15 @@
                     specs: {
                         inputs: 'Mini-assistente com: Verba + Exercício | Tipo (Receita/Despesa) | Detalhes específicos conforme tipo.',
                         processos: 'Validação de saldos disponíveis. Se despesa > saldo, alerta. Se Pesquisa de Preço obrigatória, exibe etapa. Cálculo automático de totais.',
-                        outputs: 'Registro de Previsão de Receita ou Programação de Despesa no banco de dados. Geração de Pendências se documentação obrigatória.'
+                        outputs: 'Registro de Previsão de Receita ou Programação de Despesa no banco de dados. Geração de Pendências se documentação obrigatória.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'lancamentos-manuais': {
                     title: 'Lançamentos Manuais',
@@ -574,9 +639,15 @@
                     specs: {
                         inputs: 'Escolha: [Lançar item já planejado] ou [Lançar item não planejado]. Upload de Nota Fiscal ou documento.',
                         processos: 'Validação manual de dados. Comparação com valor planejado. Detalhamento de impostos retidos. Validação de documentos obrigatórios.',
-                        outputs: 'Lançamento de Despesa registrado com status "Realizado". Ajuste automático de saldos. Pendências geradas para documentos faltantes.'
+                        outputs: 'Lançamento de Despesa registrado com status "Realizado". Ajuste automático de saldos. Pendências geradas para documentos faltantes.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'lancamentos-assistidos': {
                     title: 'Lançamentos Assistidos',
@@ -584,9 +655,15 @@
                     specs: {
                         inputs: 'Upload de Nota Fiscal ou documento. Seleção de tipo (Receita/Despesa).',
                         processos: 'Google Document AI: extração automática de dados (Fornecedor, CNPJ, Data, Valor Total). IA sugere classificação e detalhes. Comparação com planejamento. OCR para documentos escaneados.',
-                        outputs: 'Lançamento pré-preenchido para confirmação do usuário. Ajuste automático de saldos. Pendências geradas para documentos faltantes.'
+                        outputs: 'Lançamento pré-preenchido para confirmação do usuário. Ajuste automático de saldos. Pendências geradas para documentos faltantes.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 pendencias: {
                     title: 'Gestor de Pendências',
@@ -594,9 +671,15 @@
                     specs: {
                         inputs: 'Filtros: Verba, Exercício, Período, Busca livre. Ação: Registrar pendência externa manualmente.',
                         processos: '5 Abas: Documentos Pendentes | Ajustes de Planejamento (saldo excedente/insuficiente) | Conciliação Bancária | Correções em Lançamentos | Acompanhamento de Transações.',
-                        outputs: 'Listas com pendências agrupadas por tipo. Cada item com ação recomendada que redireciona para tela de resolução.'
+                        outputs: 'Listas com pendências agrupadas por tipo. Cada item com ação recomendada que redireciona para tela de resolução.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 tarefas: {
                     title: 'Tarefas',
@@ -604,9 +687,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Título, Descrição, Data Programada, Data Limite, Prioridade, Natureza, Vinculação (opcional).',
                         processos: 'Persistência em tabela Tarefa. Cron job para Notificações Push N dias antes do vencimento. Modos: Lista, Kanban, Calendário.',
-                        outputs: 'Tarefas listadas em 3 formatos. Status (Pendente/Em Progresso/Concluída). Integração com Painel Principal.'
+                        outputs: 'Tarefas listadas em 3 formatos. Status (Pendente/Em Progresso/Concluída). Integração com Painel Principal.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 notas: {
                     title: 'Bloco de Notas',
@@ -614,9 +703,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Tipo (Demanda/Reunião/Livre), Título, Descrição (Rich Text com checklists), Anexos, Links.',
                         processos: 'Busca Full-Text indexada. Filtro por Tipo. Armazenamento de Rich Text em HTML. Links: meta-tag scraping.',
-                        outputs: 'Cards com Tipo (tag colorida), Título, Prévia, Indicadores de anexos/links, Data de Criação.'
+                        outputs: 'Cards com Tipo (tag colorida), Título, Prévia, Indicadores de anexos/links, Data de Criação.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 conformidade: {
                     title: 'Central de Conformidade Fiscal',
@@ -624,9 +719,15 @@
                     specs: {
                         inputs: '5 Abas: Painel Fiscal (calendário) | Central de NF | Apuração de Impostos | Declarações | Certidões.',
                         processos: 'Integração gov.br: leitura automática de NFe/NFSe. Google Document AI em NFs. Cálculo de impostos retidos. Geração de arquivo ECF conforme FNDE.',
-                        outputs: 'Calendário com obrigações coloridas. Lista de NF com botão [Criar Lançamento]. Relatório de apuração em PDF. Alertas de certidões vencendo.'
+                        outputs: 'Calendário com obrigações coloridas. Lista de NF com botão [Criar Lançamento]. Relatório de apuração em PDF. Alertas de certidões vencendo.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 prestacoes: {
                     title: 'Prestações de Contas',
@@ -634,9 +735,15 @@
                     specs: {
                         inputs: 'Seleção de Verba/Exercício. Fluxo de 6 status: Em Elaboração → Enviada → Devolvida → Reenviada → Finalizada.',
                         processos: 'Geração de PDF via template. Integração com assinador gov.br. Monitorização automática de assinaturas. Versioning de documentos.',
-                        outputs: 'Página de Detalhes com linha do tempo. PDFs assinados. Parecer do Governo. Histórico de versões. Fluxo seguro com validações.'
+                        outputs: 'Página de Detalhes com linha do tempo. PDFs assinados. Parecer do Governo. Histórico de versões. Fluxo seguro com validações.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 relatorios: {
                     title: 'Relatórios',
@@ -644,9 +751,15 @@
                     specs: {
                         inputs: '3 Abas: Gerador (tipo + filtros dinâmicos) | Salvos (relatórios customizados) | Agendados (frequência + destinatários).',
                         processos: 'Gerador: seleção tipo → filtros dinâmicos → pré-visualização tempo real. Exportação: PDF ou Excel/CSV. Agendamento: cron job gera + envia e-mail.',
-                        outputs: 'Relatório visual com gráficos, tabelas e sumários. Múltiplos formatos. Histórico de execuções com data/hora.'
+                        outputs: 'Relatório visual com gráficos, tabelas e sumários. Múltiplos formatos. Histórico de execuções com data/hora.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 fornecedores: {
                     title: 'Fornecedores',
@@ -654,9 +767,15 @@
                     specs: {
                         inputs: 'Busca "live" por nome/CNPJ. Formulário: CNPJ → busca BrasilAPI (autopreenchimento) → endereço → contatos → classificação → observações.',
                         processos: 'CNPJ: consulta assíncrona BrasilAPI. CEP: ViaCEP. Atualização automática de "Última Compra". Bloqueio de exclusão se houver lançamentos.',
-                        outputs: 'Cards listando: Nome Fantasia, CNPJ, Grupos, Endereço, Contatos, Última Compra, Status, Ranking.'
+                        outputs: 'Cards listando: Nome Fantasia, CNPJ, Grupos, Endereço, Contatos, Última Compra, Status, Ranking.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 documentos: {
                     title: 'Documentos',
@@ -664,9 +783,15 @@
                     specs: {
                         inputs: 'Busca por nome/categoria. Filtros: Tipo, Validade, Verba. Upload de documentos.',
                         processos: 'Organização hierárquica por categoria. Conversão para PDF. Alertas de vencimento via Cron Job. Integração com Conformidade e Administrativos.',
-                        outputs: 'Lista de documentos com status, validade, anexos. Ações: Visualizar, Atualizar, Excluir. Avisos de documentos vencidos ou próximos de vencer.'
+                        outputs: 'Lista de documentos com status, validade, anexos. Ações: Visualizar, Atualizar, Excluir. Avisos de documentos vencidos ou próximos de vencer.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 suporte: {
                     title: 'Comunicação e Suporte',
@@ -674,9 +799,15 @@
                     specs: {
                         inputs: 'Aba Chamados: filtros (Status, Período, Busca). Aba Abrir: Título, Interlocutor, Finalidade, Prazo Retorno, Descrição, Anexos. Base de conhecimento (FAQs).',
                         processos: 'ID único ao chamado. Notificação Push + E-mail. Cada mensagem = MensagemChamado. Histórico completo. Log auditoria. Base de conhecimento com vídeos e tira-dúvidas automatizado.',
-                        outputs: 'Lista de Chamados com Status. Thread cronológica. Anexos. FAQ integrada. Sugestões automáticas de respostas baseadas em histórico.'
+                        outputs: 'Lista de Chamados com Status. Thread cronológica. Anexos. FAQ integrada. Sugestões automáticas de respostas baseadas em histórico.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 usuarios: {
                     title: 'Gerenciar Usuários',
@@ -684,9 +815,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Perfil → Dados Pessoais (Função, Nome, CPF, Celular, Email) → Nível Permissão (5 níveis) → Revisão.',
                         processos: 'RBAC no backend. Criação: status "Pendente", token com TTL, e-mail com link. Alterações: log auditoria. VinculoInstitucional permite múltiplas escolas.',
-                        outputs: 'Lista de usuários com: Função, Email, Nível, Data Criação, Status. Ações: Gerir, Excluir. Filtro por instituição.'
+                        outputs: 'Lista de usuários com: Função, Email, Nível, Data Criação, Status. Ações: Gerir, Excluir. Filtro por instituição.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 escolas: {
                     title: 'Gerenciar Escolas',
@@ -694,9 +831,15 @@
                     specs: {
                         inputs: 'Formulário: Nome da Escola, INEP, Dependência Administrativa, Endereço, UEx (CNPJ), Diretoria, Gestão.',
                         processos: 'Validação de INEP e CNPJ. Auto-preenchimento de endereço via CEP. Gerenciamento de múltiplas gestões por escola. Histórico de alterações.',
-                        outputs: 'Lista de escolas com dados cadastrais completos. Ações: Editar, Visualizar, Excluir. Indicador de completude cadastral.'
+                        outputs: 'Lista de escolas com dados cadastrais completos. Ações: Editar, Visualizar, Excluir. Indicador de completude cadastral.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'config-verbas': {
                     title: 'Verbas',
@@ -704,9 +847,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Nome da Verba → Primeiro Exercício → Documentos Obrigatórios → Grupos Despesa → Contas Bancárias → Fontes Receita.',
                         processos: 'Criação de estrutura Verba → Exercício. Versionamento de regras por exercício. Validação de integridade. Cálculo de índices de conformidade.',
-                        outputs: 'Lista de Verbas com exercícios, regras configuradas, status. Ações: Editar Verba, Ver Exercícios, Adicionar Exercício, Definir Regras.'
+                        outputs: 'Lista de Verbas com exercícios, regras configuradas, status. Ações: Editar Verba, Ver Exercícios, Adicionar Exercício, Definir Regras.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'contas-bancarias': {
                     title: 'Contas e Posições Bancárias',
@@ -714,9 +863,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Tipo (Conta/Espécie-Caixa) → Banco (COMPE auto) → Agência+DV → Conta+DV. Posições: integração bancária.',
                         processos: 'Validação COMPE e DV. Busca local de tabela de bancos. API de integração com banco para saldos automáticos. Bloqueio se em uso.',
-                        outputs: 'Lista: Banco, Tipo, Agência, Conta, Saldo, Tipo Conta. Posições atualizadas. Ações: Editar, Excluir, Sincronizar saldo.'
+                        outputs: 'Lista: Banco, Tipo, Agência, Conta, Saldo, Tipo Conta. Posições atualizadas. Ações: Editar, Excluir, Sincronizar saldo.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'fontes-receita': {
                     title: 'Fontes de Receita',
@@ -724,9 +879,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Nome → Esfera (checkboxes: Municipal/Estadual/Federal/Distrital/Privada/Terceiro Setor) → Descrição.',
                         processos: 'Validação de unicidade. Múltiplas esferas em array JSON. Bloqueio se vinculada a Verba. Histórico de alterações.',
-                        outputs: 'Lista com: Nome, Esfera(s), Descrição. Ações: Editar, Excluir (bloqueado se em uso). Indicador de quantas verbas usam.'
+                        outputs: 'Lista com: Nome, Esfera(s), Descrição. Ações: Editar, Excluir (bloqueado se em uso). Indicador de quantas verbas usam.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'conformidade-docs': {
                     title: 'Documentos de Conformidade',
@@ -734,9 +895,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Grupo → Subgrupo → Tipo (PDF Upload / Texto Livre / Lista Seleção / Fluxo Complexo) → Observações.',
                         processos: 'Criação de tipos documentais customizáveis. Versionamento. Proteção de itens padrão do sistema. Hierarquia flexível.',
-                        outputs: 'Tabela: Grupo, Subgrupo, Tipo, Comportamento, Observações. Ações: Editar, Excluir (bloqueado se em uso). Pré-visualização do comportamento.'
+                        outputs: 'Tabela: Grupo, Subgrupo, Tipo, Comportamento, Observações. Ações: Editar, Excluir (bloqueado se em uso). Pré-visualização do comportamento.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'admin-docs': {
                     title: 'Documentos Administrativos',
@@ -744,9 +911,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Categoria → Subcategoria → Seção (opcional) → Observações. Checkbox "Exigir".',
                         processos: 'Criação de categorias e subcategorias customizáveis. Proteção de itens padrão. Controle de quais são exigidos. Alertas de vencimento.',
-                        outputs: 'Tabela: Categoria, Subcategoria, Seção, Observações, Status Exigido. Ações: Editar, Excluir, Marcar/Desmarcar como Exigido.'
+                        outputs: 'Tabela: Categoria, Subcategoria, Seção, Observações, Status Exigido. Ações: Editar, Excluir, Marcar/Desmarcar como Exigido.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'grupos-despesa': {
                     title: 'Grupos de Despesa',
@@ -754,9 +927,15 @@
                     specs: {
                         inputs: 'Mini-assistente: Usar Área Existente ou Criar Nova → Nome Subárea → Observações. Toggle Master para habilitar/desabilitar.',
                         processos: 'Hierarquia Área → Subárea. Validação de unicidade. Bloqueio se subárea usada em lançamento. Controle de visibilidade.',
-                        outputs: 'Tabela hierárquica mostrando Áreas e Subáreas. Ações: Editar, Excluir (bloqueado se em uso). Indicador de quantos lançamentos usam.'
+                        outputs: 'Tabela hierárquica mostrando Áreas e Subáreas. Ações: Editar, Excluir (bloqueado se em uso). Indicador de quantos lançamentos usam.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 'modelos-docs': {
                     title: 'Modelos de Documentos',
@@ -764,9 +943,15 @@
                     specs: {
                         inputs: 'Seleção de Tipo de Relatório. Modelo Base (Personalização Guiada) ou Blank Canvas (Editor por Módulos). Campos Dinâmicos.',
                         processos: 'Drag-and-drop de blocos (Texto, Imagem, Tabelas, Gráficos, Assinatura). Campos dinâmicos {verba.nome}, {diretoria.presidente}. Pré-visualização tempo real. Versionamento.',
-                        outputs: 'Template salvo em JSON. Geração de PDFs conforme template. Exportável. Serviço premium para personalização externa. Gallery de templates.'
+                        outputs: 'Template salvo em JSON. Geração de PDFs conforme template. Exportável. Serviço premium para personalização externa. Gallery de templates.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 rastreabilidade: {
                     title: 'Matriz de Rastreabilidade',
@@ -774,9 +959,15 @@
                     specs: {
                         inputs: 'Filtros: Status, Responsável, Sprint/Release, Prioridade.',
                         processos: 'Cruzamento: Especificações × Tarefas TI × Status. Cálculo % completude por módulo. Integração visual com sprints.',
-                        outputs: 'Tabela rastreável: Requisito | Menu/Tela | APIs | Status | Responsável | Sprint | Data Prevista. Com cores e filtros.'
+                        outputs: 'Tabela rastreável: Requisito | Menu/Tela | APIs | Status | Responsável | Sprint | Data Prevista. Com cores e filtros.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
                 },
                 fluxos: {
                     title: 'Diagramas de Fluxo',
@@ -784,20 +975,34 @@
                     specs: {
                         inputs: 'Seleção de fluxo principal (ex: Lançamento de Despesa, Prestação de Contas, Conciliação).',
                         processos: 'Mapeamento: Tela → Validações → API Interna → API Externa (gov.br, BrasilAPI) → Banco Dados → Retorno → Próxima Tela.',
-                        outputs: 'Diagrama visual (flowchart) mostrando caminho completo. Exportável como imagem para documentação técnica.'
+                        outputs: 'Diagrama visual (flowchart) mostrando caminho completo. Exportável como imagem para documentação técnica.',
+                        layout: { description: '', file: null }
                     },
-                    comments: []
+                    comments: [],
+                    tasks: [
+                        { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                        { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                        { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                    ]
+                },
+                'editar-menus': {
+                    title: 'Editar Menus',
+                    description: 'Customize os grupos de menus e nomes dos itens do sistema',
+                    specs: {
+                        inputs: 'Seleção de grupo de menu e item para editar',
+                        processos: 'Permitir edição de nomes de grupos e itens de menu em tempo real',
+                        outputs: 'Menu atualizado com novas nomenclaturas',
+                        layout: { description: '', file: null }
+                    },
+                    comments: [],
+                    tasks: [],
+                    isMenuEditor: true
                 }
             }
         };
 
         let currentPage = 'dashboard';
         let currentEdit = null;
-        const defaultTasks = [
-            { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs' },
-            { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas' },
-            { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração' }
-        ];
 
         function renderMenus() {
             Object.entries(appData.menus).forEach(([section, items]) => {
@@ -821,17 +1026,22 @@
             document.getElementById('currentPage').textContent = data.title;
             renderMenus();
 
+            // Se for página de editar menus, renderizar editor especial
+            if (data.isMenuEditor) {
+                renderMenuEditor(page);
+                return;
+            }
+
             let html = `
                 <h1 class="page-title">${data.title}</h1>
-                <p class="page-subtitle">${data.description}</p>
+                <p class="page-subtitle" id="pageDesc_${page}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="editPageDescription('${page}')">${data.description} ✏️</p>
                 <div class="info-box">
-                    💡 <strong>Dica:</strong> Clique em ✏️ para editar, 💬 para comentar. Adicione observações que sua equipe de TI precise saber.
+                    💡 <strong>Dica:</strong> Clique na descrição acima para editar, em ✏️ para editar specs, 💬 para comentar. Adicione observações que sua equipe de TI precise saber.
                 </div>
                 <div class="spec-grid">
             `;
 
             Object.entries(data.specs).forEach(([key, specValue]) => {
-                // Handle both old format (string) and new format (object with layout)
                 const isLayoutField = key === 'layout';
                 const value = typeof specValue === 'string' ? specValue : (specValue && specValue.description ? specValue.description : '');
                 const layoutFile = specValue && specValue.file ? specValue.file : null;
@@ -863,20 +1073,42 @@
             html += '</div>';
 
             // ===== TAREFAS DE IMPLEMENTAÇÃO =====
+            let pageTasks = appData.specifications[page].tasks || [];
+            if (pageTasks.length === 0) {
+                pageTasks = [
+                    { title: 'Implementar layout da página', desc: 'Frontend: criar componentes conforme specs', status: 'pending' },
+                    { title: 'Implementar backend e APIs', desc: 'Endpoints, validações e integrações externas', status: 'pending' },
+                    { title: 'Testes e QA', desc: 'Validação contra specs, testes de integração', status: 'pending' }
+                ];
+                appData.specifications[page].tasks = pageTasks;
+            }
+
             html += `
                 <div class="task-section">
                     <h2>📋 Tarefas de Implementação</h2>
             `;
 
-            defaultTasks.forEach((task, i) => {
+            // Separar tarefas concluídas das pendentes
+            const pendingTasks = pageTasks.filter(t => (t.status || 'pending') !== 'done');
+            const doneTasks = pageTasks.filter(t => (t.status || 'pending') === 'done');
+            const allTasks = [...pendingTasks, ...doneTasks];
+
+            allTasks.forEach((task, displayIndex) => {
+                const status = task.status || 'pending';
+                const statusLabel = status === 'done' ? 'Concluído' : (status === 'in-progress' ? 'Em Progresso' : 'Pendente');
+                const statusClass = status === 'done' ? 'status-done' : (status === 'in-progress' ? 'status-in-progress' : 'status-pending');
+                const actualIndex = pageTasks.indexOf(task);
+
                 html += `
                     <div class="task-item">
-                        <input type="checkbox" class="task-checkbox" onchange="toggleTask(this)">
+                        <input type="checkbox" class="task-checkbox" ${status === 'done' ? 'checked' : ''} onchange="toggleTask(this, '${page}', ${actualIndex})">
                         <div class="task-info">
                             <div class="task-title">${task.title}</div>
                             <div class="task-desc">${task.desc}</div>
                         </div>
-                        <span class="task-status status-pending">Pendente</span>
+                        <span class="task-status ${statusClass}">${statusLabel}</span>
+                        <button class="btn-layout" style="margin-left: 8px; padding: 4px 8px;" onclick="editTask('${page}', ${actualIndex})">✏️</button>
+                        <button class="btn-layout" style="margin-left: 4px; padding: 4px 8px; background: #fee2e2; color: #dc2626;" onclick="deleteTask('${page}', ${actualIndex})">🗑️</button>
                     </div>
                 `;
             });
@@ -937,12 +1169,10 @@
             const field = currentEdit.field;
             const specs = appData.specifications[currentEdit.page].specs;
 
-            // Se for campo layout, salvar description
             if (field === 'layout') {
                 if (!specs.layout) specs.layout = { description: '', file: null };
                 specs.layout.description = value;
             } else {
-                // Para outros campos, verificar se já é objeto ou string
                 const existing = specs[field];
                 if (typeof existing === 'object' && existing !== null && 'description' in existing) {
                     existing.description = value;
@@ -956,6 +1186,7 @@
             closeModal();
             navigateTo(currentPage);
             showFeedback('✅ Salvo com sucesso!');
+            saveData();
         }
 
         function showComments(page, field) {
@@ -999,6 +1230,7 @@
                 author: appData.currentUser,
                 date: new Date().toISOString()
             });
+            saveData();
             showComments(page, field);
             showFeedback('💬 Comentário adicionado!');
         }
@@ -1008,29 +1240,217 @@
             if (newName && newName.trim()) {
                 appData.currentUser = newName.trim();
                 localStorage.setItem('gestao-escola-user', appData.currentUser);
-                navigateTo(currentPage);
+                const userName = document.getElementById('userName');
+                if (userName) {
+                    userName.textContent = appData.currentUser;
+                }
+                saveData();
                 showFeedback(`👤 Olá, ${appData.currentUser}!`);
+            }
+        }
+
+        function changeUserPhoto() {
+            document.getElementById('photoInput').click();
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                appData.userPhoto = e.target.result;
+                updateUserAvatar();
+                saveData();
+                showFeedback('📸 Foto atualizada!');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateUserAvatar() {
+            const avatar = document.getElementById('userAvatar');
+            if (!avatar) return;
+
+            if (appData.userPhoto) {
+                avatar.innerHTML = `<img src="${appData.userPhoto}" alt="${appData.currentUser}">`;
+            } else {
+                avatar.innerHTML = appData.currentUser.charAt(0).toUpperCase();
             }
         }
 
         function deleteComment(page, field, index) {
             appData.specifications[page].comments.splice(index, 1);
+            saveData();
             showComments(page, field);
         }
 
-        function toggleTask(checkbox) {
+        function toggleTask(checkbox, page, taskIndex) {
             const statusSpan = checkbox.parentElement.querySelector('.task-status');
             if (checkbox.checked) {
                 statusSpan.textContent = 'Concluído';
                 statusSpan.className = 'task-status status-done';
+                appData.specifications[page].tasks[taskIndex].status = 'done';
             } else {
                 statusSpan.textContent = 'Pendente';
                 statusSpan.className = 'task-status status-pending';
+                appData.specifications[page].tasks[taskIndex].status = 'pending';
             }
+            saveData();
         }
 
         function closeModal() { document.getElementById('editModal').classList.remove('active'); }
         function closeCommentsModal() { document.getElementById('commentsModal').classList.remove('active'); }
+
+        function editTask(page, taskIndex) {
+            const task = appData.specifications[page].tasks[taskIndex];
+            const newTitle = prompt('Título da tarefa:', task.title);
+            if (newTitle === null) return;
+
+            const newDesc = prompt('Descrição da tarefa:', task.desc);
+            if (newDesc === null) return;
+
+            appData.specifications[page].tasks[taskIndex].title = newTitle;
+            appData.specifications[page].tasks[taskIndex].desc = newDesc;
+            saveData();
+            navigateTo(page);
+            showFeedback('✅ Tarefa atualizada!');
+        }
+
+        function deleteTask(page, taskIndex) {
+            if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                appData.specifications[page].tasks.splice(taskIndex, 1);
+                saveData();
+                navigateTo(page);
+                showFeedback('🗑️ Tarefa excluída!');
+            }
+        }
+
+        function renderMenuEditor(page) {
+            let html = `
+                <h1 class="page-title">⚙️ Editar Menus</h1>
+                <p class="page-subtitle">Customize os nomes, ícones e itens de menu</p>
+                <div class="info-box">
+                    💡 <strong>Dica:</strong> Clique em ✏️ para editar, ➕ para adicionar novo item, 🗑️ para excluir.
+                </div>
+            `;
+
+            Object.entries(appData.menus).forEach(([groupKey, items]) => {
+                html += `
+                    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="color: var(--primary); cursor: pointer; margin: 0; flex: 1;" onclick="editMenuGroup('${groupKey}')">${getGroupLabel(groupKey)} ✏️</h3>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
+                `;
+
+                items.forEach((item, idx) => {
+                    html += `
+                        <div style="background: var(--bg); padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                            <div style="flex: 1; cursor: pointer;" onclick="editMenuItem('${groupKey}', ${idx})">
+                                <div style="font-size: 18px; margin-bottom: 4px;">${item.icon}</div>
+                                <div style="font-size: 13px; font-weight: 600;">${item.label}</div>
+                            </div>
+                            <button class="btn-layout" style="padding: 4px 8px;" onclick="editMenuItem('${groupKey}', ${idx})">✏️</button>
+                            <button class="btn-layout" style="padding: 4px 8px; background: #fee2e2; color: #dc2626;" onclick="deleteMenuItem('${groupKey}', ${idx})">🗑️</button>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 12px; width: 100%;" onclick="addMenuItem('${groupKey}')">➕ Adicionar Item</button>
+                    </div>
+                `;
+            });
+
+            document.getElementById('contentArea').innerHTML = html;
+        }
+
+        function getGroupLabel(groupKey) {
+            const labels = {
+                principal: '📋 Principal',
+                admin: '⚙️ Administração',
+                config: '🔧 Configuração',
+                analise: '📊 Análise'
+            };
+            return labels[groupKey] || groupKey;
+        }
+
+        function editMenuGroup(groupKey) {
+            const labels = {
+                principal: 'Principal',
+                admin: 'Administração',
+                config: 'Configuração',
+                analise: 'Análise'
+            };
+            const newLabel = prompt('Novo nome do grupo:', labels[groupKey]);
+            if (newLabel) {
+                labels[groupKey] = newLabel;
+                // Atualizar no DOM
+                navigateTo('editar-menus');
+                showFeedback('✅ Grupo atualizado!');
+                saveData();
+            }
+        }
+
+        function editMenuItem(groupKey, itemIndex) {
+            const item = appData.menus[groupKey][itemIndex];
+            const newLabel = prompt('Novo nome do item:', item.label);
+            if (newLabel === null) return;
+
+            const newIcon = prompt('Novo ícone (emoji):', item.icon);
+            if (newIcon === null) return;
+
+            appData.menus[groupKey][itemIndex].label = newLabel;
+            appData.menus[groupKey][itemIndex].icon = newIcon;
+            saveData();
+            navigateTo('editar-menus');
+            renderMenus();
+            showFeedback('✅ Item atualizado!');
+        }
+
+        function deleteMenuItem(groupKey, itemIndex) {
+            if (confirm(`Tem certeza que deseja excluir "${appData.menus[groupKey][itemIndex].label}"?`)) {
+                appData.menus[groupKey].splice(itemIndex, 1);
+                saveData();
+                navigateTo('editar-menus');
+                renderMenus();
+                showFeedback('🗑️ Item excluído!');
+            }
+        }
+
+        function addMenuItem(groupKey) {
+            const label = prompt('Nome do novo item:');
+            if (label === null) return;
+
+            const icon = prompt('Ícone (emoji):', '📌');
+            if (icon === null) return;
+
+            // Gerar ID único baseado no label
+            const id = label.toLowerCase().replace(/\s+/g, '-');
+
+            appData.menus[groupKey].push({
+                id: id,
+                icon: icon,
+                label: label
+            });
+
+            saveData();
+            navigateTo('editar-menus');
+            renderMenus();
+            showFeedback('➕ Item adicionado!');
+        }
+
+        function editPageDescription(page) {
+            const data = appData.specifications[page];
+            const newDescription = prompt('Nova descrição da página:', data.description);
+            if (newDescription && newDescription.trim()) {
+                appData.specifications[page].description = newDescription.trim();
+                saveData();
+                navigateTo(page);
+                showFeedback('✅ Descrição atualizada!');
+            }
+        }
 
         function importData() {
             document.getElementById('importFileInput').click();
@@ -1045,19 +1465,15 @@
                 try {
                     const importedData = JSON.parse(e.target.result);
 
-                    // Validação básica
                     if (!importedData.specifications || !importedData.currentUser) {
                         throw new Error('Arquivo JSON inválido');
                     }
 
-                    // Confirmar antes de sobrescrever
                     if (confirm('⚠️ Isso vai substituir todos os dados atuais.\n\nTem certeza que deseja importar?')) {
-                        // Manter a logo atual se não houver nova
                         if (importedData.logo) {
                             appData.logo = importedData.logo;
                         }
 
-                        // Importar dados
                         appData.specifications = importedData.specifications;
                         appData.currentUser = importedData.currentUser;
                         appData.version = importedData.version || appData.version;
@@ -1071,7 +1487,6 @@
                     alert('❌ Erro ao importar: ' + error.message);
                 }
 
-                // Limpar input
                 event.target.value = '';
             };
             reader.readAsText(file);
@@ -1118,6 +1533,7 @@
 
                 navigateTo(page);
                 showFeedback(`📤 Arquivo "${file.name}" carregado!`);
+                saveData();
             };
             reader.readAsDataURL(file);
         }
@@ -1127,6 +1543,7 @@
                 appData.specifications[page].specs.layout.file = null;
                 navigateTo(page);
                 showFeedback('🗑️ Arquivo removido');
+                saveData();
             }
         }
 
@@ -1140,35 +1557,28 @@
 4. CLIQUE em 📤 para CARREGAR ARQUIVO (Figma, Wireframe, etc)
 5. CLIQUE em 💬 para COMENTAR e esclarecer dúvidas
 6. MARQUE ✅ as tarefas conforme sua equipe implementa
-7. EXPORTE em JSON para compartilhar com sua equipe de TI
+7. CLIQUE em ✏️ nas tarefas para EDITAR título e descrição
+8. EXPORTE em JSON para compartilhar com sua equipe de TI
 
 💡 Dica: Use o campo LAYOUT para descrever ou anexar wireframes/mockups. Use comentários para dúvidas.
             `);
         }
 
-        // Função para migrar especificações antigas (adicionar campo layout)
         function migrateOldSpecs() {
             Object.keys(appData.specifications).forEach(pageId => {
                 const specs = appData.specifications[pageId].specs;
                 Object.keys(specs).forEach(fieldKey => {
                     const fieldValue = specs[fieldKey];
-                    // Se for string, converter para objeto com layout
                     if (typeof fieldValue === 'string') {
                         specs[fieldKey] = { description: fieldValue };
                     }
-                    // Se for objeto mas não tiver layout, adicionar
-                    if (typeof specs[fieldKey] === 'object' && !specs[fieldKey].layout && fieldKey !== 'layout') {
-                        // Continuar como está (já é objeto)
-                    }
                 });
-                // Adicionar campo layout se não existir
                 if (!specs.layout) {
                     specs.layout = { description: '', file: null };
                 }
             });
         }
 
-        // Funções para upload de logo
         function handleLogoUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1190,11 +1600,11 @@
                 appData.logo = e.target.result;
                 appData.logoFileName = file.name;
                 showFeedback('✅ Logo carregada com sucesso!');
+                saveData();
             };
             reader.readAsDataURL(file);
         }
 
-        // Drag and drop para logo
         const logoDropzone = document.getElementById('logoDropzone');
         if (logoDropzone) {
             logoDropzone.addEventListener('dragover', (e) => {
@@ -1217,7 +1627,6 @@
             });
         }
 
-        // Inicializar dados no localStorage
         function saveData() {
             localStorage.setItem('gestao-escola-app', JSON.stringify(appData));
         }
@@ -1226,11 +1635,24 @@
             const stored = localStorage.getItem('gestao-escola-app');
             if (stored) {
                 try {
-                    appData = JSON.parse(stored);
+                    const parsedData = JSON.parse(stored);
+                    appData = parsedData;
                 } catch (e) {
                     console.log('Erro ao carregar dados, usando padrão');
                 }
             }
+        }
+
+        function updateVersionDisplay() {
+            const versionDisplay = document.getElementById('versionDisplay');
+            const backupVersion = document.getElementById('backupVersion');
+            const userName = document.getElementById('userName');
+
+            if (versionDisplay) versionDisplay.textContent = appData.version;
+            if (backupVersion) backupVersion.textContent = appData.version;
+            if (userName) userName.textContent = appData.currentUser;
+
+            updateUserAvatar();
         }
 
         window.addEventListener('load', () => {
@@ -1238,13 +1660,9 @@
             migrateOldSpecs();
             renderMenus();
             navigateTo('dashboard');
-            
-            // Salvar dados automaticamente a cada mudança
-            document.addEventListener('change', saveData);
-            document.addEventListener('input', saveData);
+            updateVersionDisplay();
         });
 
-        // Salvar dados quando fechar a página
         window.addEventListener('beforeunload', saveData);
     </script>
 </body>
